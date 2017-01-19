@@ -1732,6 +1732,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("kt15439_completeCall.kt")
+            public void testKt15439_completeCall() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/kt15439_completeCall.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt7430_wrongClassOnLHS.kt")
             public void testKt7430_wrongClassOnLHS() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/kt7430_wrongClassOnLHS.kt");
@@ -2244,6 +2250,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     doTest(fileName);
                 }
 
+                @TestMetadata("genericFunctionsWithNullableTypes.kt")
+                public void testGenericFunctionsWithNullableTypes() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/genericFunctionsWithNullableTypes.kt");
+                    doTest(fileName);
+                }
+
                 @TestMetadata("kt10968.kt")
                 public void testKt10968() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/kt10968.kt");
@@ -2268,9 +2280,27 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     doTest(fileName);
                 }
 
+                @TestMetadata("nestedCallWithOverload.kt")
+                public void testNestedCallWithOverload() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/nestedCallWithOverload.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("resolutionGenericCallableWithNullableTypes.kt")
+                public void testResolutionGenericCallableWithNullableTypes() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/resolutionGenericCallableWithNullableTypes.kt");
+                    doTest(fileName);
+                }
+
                 @TestMetadata("resolutionWithGenericCallable.kt")
                 public void testResolutionWithGenericCallable() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/resolutionWithGenericCallable.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("specialCalls.kt")
+                public void testSpecialCalls() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/callableReference/generic/specialCalls.kt");
                     doTest(fileName);
                 }
             }

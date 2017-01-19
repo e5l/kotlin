@@ -52,7 +52,10 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.TypeUtils.DONT_CARE
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
+import org.jetbrains.kotlin.types.expressions.ControlStructureTypingUtils.ResolveConstruct
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
+
+private val SPECIAL_FUNCTION_NAMES = ResolveConstruct.values().map { it.specialFunctionName }.toSet()
 
 class GenericCandidateResolver(
         private val argumentTypeResolver: ArgumentTypeResolver,
@@ -280,11 +283,25 @@ class GenericCandidateResolver(
 
                     // as inference for callable references depends on expected type,
                     // we should postpone reporting errors on them until all types will be inferred
-                    val temporaryBindingTrace = TemporaryBindingTrace.create(
-                            newContext.trace, "Trace to complete argument for call that might be not resulting call")
-                    val temporaryContextForCall = newContext.replaceBindingTrace(temporaryBindingTrace)
-                    ArgumentTypeResolver.getCallableReferenceExpressionIfAny(argumentExpression, temporaryContextForCall)?.let { callableReference ->
-                        addConstraintForCallableReference(callableReference, valueArgument, valueParameterDescriptor, constraintSystem, temporaryContextForCall)
+
+                    // We do not replace trace for special calls (e.g. if-expressions) because of their specific analysis
+                    // For example, type info for arguments is needed before call will be completed (See ControlStructureTypingVisitor.visitIfExpression)
+                    val temporaryContextForCall = if (resolvedCall.candidateDescriptor.name in SPECIAL_FUNCTION_NAMES) {
+                        newContext
+                    }
+                    else {
+                        val temporaryBindingTrace = TemporaryBindingTrace.create(
+                                newContext.trace, "Trace to complete argument for call that might be not resulting call")
+                        newContext.replaceBindingTrace(temporaryBindingTrace)
+                    }
+
+                    ArgumentTypeResolver.getCallableReferenceExpressionIfAny(argumentExpression, newContext)?.let { callableReference ->
+                        addConstraintForCallableReference(
+                                callableReference,
+                                valueArgument,
+                                valueParameterDescriptor,
+                                constraintSystem,
+                                temporaryContextForCall)
                     }
                 }
             }
