@@ -22,6 +22,24 @@ fun foo() {
             En.С -> {}
         }
     }
+
+    val en: En = En.A
+    // nullable variable
+    val en2: Any? = En.A
+    if (en2 is En) {
+        when (en2) {
+            En.A -> {}
+            En.B -> {}
+            En.С -> {}
+        }
+
+        when (en2 as En) {
+            En.A -> {}
+            En.B -> {}
+            En.С -> {}
+        }
+    }
+
 }
 
 enum class En2 { D, E, F }
