@@ -12633,6 +12633,12 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             doTest(fileName);
         }
 
+        @TestMetadata("binarySafeCall.kt")
+        public void testBinarySafeCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/replaceSingleLineLetIntention/binarySafeCall.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("comparisons.kt")
         public void testComparisons() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/replaceSingleLineLetIntention/comparisons.kt");
