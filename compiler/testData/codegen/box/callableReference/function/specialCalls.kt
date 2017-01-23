@@ -1,5 +1,3 @@
-// WITH_RUNTIME
-
 fun baz(i: Int) = i
 fun <T> bar(x: T): T = x
 
@@ -19,13 +17,13 @@ fun box(): String {
 
     val x5: (Int) -> Int = bar(::baz!!)
 
-    assert((if (true) ::baz else ::baz)(1) == 1)
+    if (x1(1) != 1) return "fail 1"
+    if (x2(1) != 1) return "fail 2"
+    if (x3(1) != 1) return "fail 3"
+    if (x4(1) != 1) return "fail 4"
+    if (x5(1) != 1) return "fail 5"
 
-    assert(x1(1) == 1)
-    assert(x2(2) == 2)
-    assert(x3(3) == 3)
-    assert(x4(4) == 4)
-    assert(x5(5) == 5)
+    if ((if (true) ::baz else ::baz)(1) != 1) return "fail 6"
 
     return "OK"
 }
