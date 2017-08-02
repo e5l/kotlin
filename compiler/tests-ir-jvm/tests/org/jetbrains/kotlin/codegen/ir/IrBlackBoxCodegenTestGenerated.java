@@ -17629,6 +17629,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/signatureAnnotations/defaultValueInConstructor.kt");
             doTest(fileName);
         }
+
+        @TestMetadata("redirectCall.kt")
+        public void testRedirectCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/signatureAnnotations/redirectCall.kt");
+            doTest(fileName);
+        }
     }
 
     @TestMetadata("compiler/testData/codegen/box/smap")

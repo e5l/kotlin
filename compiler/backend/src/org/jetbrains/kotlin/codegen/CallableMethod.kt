@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.codegen
 
 import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.resolve.RedirectSignatureInfo
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterKind
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature
@@ -37,7 +38,8 @@ class CallableMethod(
         override val dispatchReceiverType: Type?,
         override val extensionReceiverType: Type?,
         override val generateCalleeType: Type?,
-        private val isInterfaceMethod: Boolean = Opcodes.INVOKEINTERFACE == invokeOpcode
+        private val isInterfaceMethod: Boolean = Opcodes.INVOKEINTERFACE == invokeOpcode,
+        private val redirectInfo: RedirectSignatureInfo? = null
 ) : Callable {
     fun getValueParameters(): List<JvmMethodParameterSignature> =
             signature.valueParameters
@@ -53,6 +55,11 @@ class CallableMethod(
 
 
     override fun genInvokeInstruction(v: InstructionAdapter) {
+        if (redirectInfo != null) {
+            v.visitMethodInsn(INVOKESTATIC, redirectInfo.owner, redirectInfo.name, redirectInfo.signature, false)
+            return
+        }
+
         v.visitMethodInsn(
                 invokeOpcode,
                 owner.internalName,

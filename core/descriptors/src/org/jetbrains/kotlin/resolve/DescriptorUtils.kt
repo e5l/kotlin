@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getContainingClass
+import org.jetbrains.kotlin.resolve.RedirectSignatureInfo
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -46,6 +47,7 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 private val DEFAULT_VALUE_FQ_NAME = FqName("kotlin.internal.DefaultValue")
 private val DEFAULT_NULL_FQ_NAME = FqName("kotlin.internal.DefaultNull")
+private val REDIRECT_CALL_FQ_NAME = FqName("kotlin.internal.RedirectCall")
 
 sealed class AnnotationDefaultValue
 class StringDefaultValue(val value: String) : AnnotationDefaultValue()
@@ -297,6 +299,17 @@ fun CallableMemberDescriptor.overriddenTreeAsSequence(useOriginal: Boolean): Seq
     with(if (useOriginal) original else this) {
         sequenceOf(this) + overriddenDescriptors.asSequence().flatMap { it.overriddenTreeAsSequence(useOriginal) }
     }
+
+fun CallableMemberDescriptor.redirectInfoFromAnnotation(): RedirectSignatureInfo? {
+    val redirectDescriptor = annotations.findAnnotation(REDIRECT_CALL_FQ_NAME) ?: return null
+    val arguments = redirectDescriptor.allValueArguments
+
+    val (owner, name, signature) = listOf("owner", "name", "signature").map {
+        arguments[Name.identifier(it)]?.value?.safeAs<String>() ?: return null
+    }
+
+    return RedirectSignatureInfo(owner, name, signature)
+}
 
 fun <D : CallableDescriptor> D.overriddenTreeUniqueAsSequence(useOriginal: Boolean): Sequence<D> {
     val set = hashSetOf<D>()

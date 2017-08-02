@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.codegen.signature.AsmTypeFactory;
 import org.jetbrains.kotlin.codegen.signature.BothSignatureWriter;
 import org.jetbrains.kotlin.codegen.signature.JvmSignatureWriter;
 import org.jetbrains.kotlin.descriptors.*;
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor;
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableAccessorDescriptor;
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor;
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor;
@@ -68,6 +69,7 @@ import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodGenericSignature;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterKind;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature;
+import org.jetbrains.kotlin.serialization.deserialization.AnnotationDeserializer;
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedCallableMemberDescriptor;
 import org.jetbrains.kotlin.types.*;
 import org.jetbrains.kotlin.util.OperatorNameConventions;
@@ -718,7 +720,7 @@ public class KotlinTypeMapper {
             String defaultImplDesc = mapDefaultMethod(descriptor.getOriginal(), OwnerKind.IMPLEMENTATION).getDescriptor();
             return new CallableMethod(
                     owner, owner, defaultImplDesc, method, INVOKESPECIAL,
-                    null, null, null, false
+                    null, null, null, false, null
             );
         }
 
@@ -838,11 +840,12 @@ public class KotlinTypeMapper {
         }
 
         String defaultImplDesc = mapDefaultMethod(baseMethodDescriptor, getKindForDefaultImplCall(baseMethodDescriptor)).getDescriptor();
+        RedirectSignatureInfo redirectSignatureInfo = DescriptorUtilsKt.redirectInfoFromAnnotation(functionDescriptor);
 
         return new CallableMethod(
                 owner, ownerForDefaultImpl, defaultImplDesc, signature, invokeOpcode,
                 thisClass, receiverParameterType, calleeType,
-                isJvm8Target ? isInterfaceMember : invokeOpcode == INVOKEINTERFACE );
+                isJvm8Target ? isInterfaceMember : invokeOpcode == INVOKEINTERFACE, redirectSignatureInfo);
     }
 
     private boolean isJvm8InterfaceWithDefaults(@NotNull ClassDescriptor ownerForDefault) {
