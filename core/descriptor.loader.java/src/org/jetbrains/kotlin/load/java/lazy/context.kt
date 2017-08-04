@@ -109,25 +109,28 @@ fun LazyJavaResolverContext.child(
 fun LazyJavaResolverContext.computeNewDefaultTypeQualifiers(
         additionalAnnotations: Annotations
 ): JavaTypeQualifiersByElementType? {
-    val typeQualifierDefaults =
-            additionalAnnotations.mapNotNull(components.annotationTypeQualifierResolver::resolveTypeQualifierDefaultAnnotation)
+    val typeQualifierWithState = additionalAnnotations.mapNotNull {
+        val typeQualifierResolver = components.annotationTypeQualifierResolver
+        val typeQualifier = typeQualifierResolver.resolveTypeQualifierDefaultAnnotation(it) ?: return@mapNotNull null
+        val state = typeQualifierResolver.resolveJsr305AnnotationState(it).takeIf { !it.isIgnored() } ?: return@mapNotNull null
 
-    if (typeQualifierDefaults.isEmpty()) return defaultTypeQualifiers
+        typeQualifier to state
+    }
+
+
+    if (typeQualifierWithState.isEmpty()) return defaultTypeQualifiers
 
     val nullabilityQualifiers =
             defaultTypeQualifiers?.nullabilityQualifiers?.let(::QualifierByApplicabilityType)
             ?: QualifierByApplicabilityType(AnnotationTypeQualifierResolver.QualifierApplicabilityType::class.java)
 
     var wasUpdate = false
-    val forWarning = components.annotationTypeQualifierResolver.policyForJsr305Annotations.isWarning()
-    for ((typeQualifier, applicableTo) in typeQualifierDefaults) {
-        val nullability = components
-                                  .signatureEnhancement
-                                  .extractNullability(typeQualifier)
-                                  ?.copy(isForWarningOnly = forWarning) ?: continue
+    for ((typeQualifier, state) in typeQualifierWithState) {
+        val (descriptor, applicableTo) = typeQualifier
+        val nullability = components.signatureEnhancement.extractNullability(descriptor) ?: continue
 
         for (applicabilityType in applicableTo) {
-            nullabilityQualifiers[applicabilityType] = nullability
+            nullabilityQualifiers[applicabilityType] = nullability.copy(isForWarningOnly = state.isWarning())
             wasUpdate = true
         }
     }

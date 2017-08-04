@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.checkers
 
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.test.MockLibraryUtil
 import org.jetbrains.kotlin.utils.Jsr305State
@@ -25,7 +26,9 @@ import java.io.File
 val FOREIGN_ANNOTATIONS_SOURCES_PATH = "compiler/testData/foreignAnnotations/annotations"
 
 abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsWithFullJdkTest() {
-    private val WARNING_FOR_JSR305_ANNOTATIONS_DIRECTIVE = "WARNING_FOR_JSR305_ANNOTATIONS"
+    private val JSR305_GLOBAL_DIRECTIVE = "JSR305_GLOBAL_REPORT"
+    private val JSR305_MIGRATION_DIRECTIVE = "JSR305_MIGRATION_REPORT"
+    private val JSR305_SPECIAL_DIRECTIVE = "JSR305_SPECIAL_REPORT"
 
     override fun getExtraClasspath(): List<File> =
             listOf(MockLibraryUtil.compileJvmLibraryToJar(annotationsPath, "foreign-annotations"))
@@ -34,13 +37,32 @@ abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsWithFullJdkTe
         get() = FOREIGN_ANNOTATIONS_SOURCES_PATH
 
     override fun loadLanguageVersionSettings(module: List<TestFile>): LanguageVersionSettings {
-        val hasWarningDirective = module.none {
-            InTextDirectivesUtils.isDirectiveDefined(it.expectedText, WARNING_FOR_JSR305_ANNOTATIONS_DIRECTIVE)
-        }
+        val analysisFlags = loadAnalysisFlags(module)
+        return LanguageVersionSettingsImpl(LanguageVersion.LATEST_STABLE, ApiVersion.LATEST_STABLE, analysisFlags)
+    }
 
-        val jsr305State = if (hasWarningDirective) Jsr305State.WARN else Jsr305State.ENABLE
-        return LanguageVersionSettingsImpl(LanguageVersion.LATEST_STABLE, ApiVersion.LATEST_STABLE,
-                                           mapOf(AnalysisFlag.jsr305GlobalState to jsr305State)
+    private fun loadAnalysisFlags(module: List<TestFile>): Map<AnalysisFlag<*>, Any?> {
+        val globalState = module.mapNotNull {
+            InTextDirectivesUtils.findLinesWithPrefixesRemoved(it.expectedText, JSR305_GLOBAL_DIRECTIVE).firstOrNull()
+        }.firstOrNull().let({ Jsr305State.findByDescription(it) }) ?: Jsr305State.ENABLE
+
+        val migrationState = module.mapNotNull {
+            InTextDirectivesUtils.findLinesWithPrefixesRemoved(it.expectedText, JSR305_MIGRATION_DIRECTIVE).firstOrNull()
+        }.firstOrNull().let({ Jsr305State.findByDescription(it) })
+
+        val userAnnotationsState = module.flatMap {
+            InTextDirectivesUtils.findListWithPrefixes(it.expectedText, JSR305_SPECIAL_DIRECTIVE)
+        }.mapNotNull {
+            val (name, stateDescription) = it.split(":").takeIf { it.size == 2 } ?: return@mapNotNull null
+            val state = Jsr305State.findByDescription(stateDescription) ?: return@mapNotNull null
+
+            FqName(name) to state
+        }.toMap()
+
+        return mapOf(
+                AnalysisFlag.jsr305GlobalState to globalState,
+                AnalysisFlag.jsr305MigrationState to migrationState,
+                AnalysisFlag.jsr305UserAnnotationsState to userAnnotationsState
         )
     }
 }
