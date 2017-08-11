@@ -42,6 +42,9 @@ import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
 import org.jetbrains.kotlin.utils.DFS
 import org.jetbrains.kotlin.utils.SmartList
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+
+private val PARAMETER_NAME_FQ_NAME = FqName("kotlin.internal.ParameterName")
 
 fun ClassDescriptor.getClassObjectReferenceTarget(): ClassDescriptor = companionObjectDescriptor ?: this
 
@@ -197,6 +200,15 @@ fun ValueParameterDescriptor.hasDefaultValue(): Boolean {
             },
             ValueParameterDescriptor::declaresDefaultValue
     )
+}
+
+fun ValueParameterDescriptor.getParameterNameAnnotation(): AnnotationDescriptor? {
+    val annotation = annotations.findAnnotation(PARAMETER_NAME_FQ_NAME) ?: return null
+    if (annotation.firstArgumentValue()?.safeAs<String>()?.isEmpty() != false) {
+        return null
+    }
+
+    return annotation
 }
 
 fun FunctionDescriptor.hasOrInheritsParametersWithDefaultValue(): Boolean = DFS.ifAny(
@@ -431,3 +443,5 @@ fun MemberDescriptor.isEffectivelyExternal(): Boolean {
     val containingClass = getContainingClass(this)
     return containingClass != null && containingClass.isEffectivelyExternal()
 }
+
+fun AnnotationDescriptor.firstArgumentValue() = allValueArguments.values.firstOrNull()?.value
