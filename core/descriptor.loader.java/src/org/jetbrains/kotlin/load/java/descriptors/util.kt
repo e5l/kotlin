@@ -28,8 +28,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 
+class ValueParameterData(val type: KotlinType, val hasDefaultValue: Boolean)
+
 fun copyValueParameters(
-        newValueParametersTypes: Collection<KotlinType>,
+        newValueParametersTypes: Collection<ValueParameterData>,
         oldValueParameters: Collection<ValueParameterDescriptor>,
         newOwner: CallableDescriptor
 ): List<ValueParameterDescriptor> {
@@ -37,20 +39,18 @@ fun copyValueParameters(
         "Different value parameters sizes: Enhanced = ${newValueParametersTypes.size}, Old = ${oldValueParameters.size}"
     }
 
-    return newValueParametersTypes.zip(oldValueParameters).map {
-        pair ->
-        val (newType, oldParameter) = pair
+    return newValueParametersTypes.zip(oldValueParameters).map { (newParameter, oldParameter) ->
         ValueParameterDescriptorImpl(
                 newOwner,
                 oldParameter,
                 oldParameter.index,
                 oldParameter.annotations,
                 oldParameter.name,
-                newType,
-                oldParameter.declaresDefaultValue(),
+                newParameter.type,
+                newParameter.hasDefaultValue,
                 oldParameter.isCrossinline,
                 oldParameter.isNoinline,
-                if (oldParameter.varargElementType != null) newOwner.module.builtIns.getArrayElementType(newType) else null,
+                if (oldParameter.varargElementType != null) newOwner.module.builtIns.getArrayElementType(newParameter.type) else null,
                 oldParameter.source
         )
     }

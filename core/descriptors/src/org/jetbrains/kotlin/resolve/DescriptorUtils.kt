@@ -46,6 +46,13 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 private val PARAMETER_NAME_FQ_NAME = FqName("kotlin.internal.ParameterName")
 
+private val DEFAULT_VALUE_FQ_NAME = FqName("kotlin.internal.DefaultValue")
+private val DEFAULT_NULL_FQ_NAME = FqName("kotlin.internal.DefaultNull")
+
+sealed class AnnotationDefaultValue
+class StringDefaultValue(val value: String) : AnnotationDefaultValue()
+object NullDefaultValue : AnnotationDefaultValue()
+
 fun ClassDescriptor.getClassObjectReferenceTarget(): ClassDescriptor = companionObjectDescriptor ?: this
 
 fun DeclarationDescriptor.getImportableDescriptor(): DeclarationDescriptor {
@@ -209,6 +216,33 @@ fun ValueParameterDescriptor.getParameterNameAnnotation(): AnnotationDescriptor?
     }
 
     return annotation
+}
+
+fun ValueParameterDescriptor.getDefaultValueFromAnnotation(): AnnotationDefaultValue? {
+    val handler = object : DFS.NodeHandlerWithListResult<ValueParameterDescriptor, ValueParameterDescriptor>() {
+        override fun beforeChildren(current: ValueParameterDescriptor): Boolean {
+            val containingDeclaration = current.containingDeclaration
+            if (containingDeclaration is CallableMemberDescriptor &&
+                containingDeclaration.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+                return true
+            }
+
+            val annotations = current.annotations
+            val hasDefaultAnnotation = annotations.hasAnnotation(DEFAULT_VALUE_FQ_NAME) xor annotations.hasAnnotation(DEFAULT_NULL_FQ_NAME)
+            if (hasDefaultAnnotation && current.overriddenDescriptors.isEmpty()) {
+                result.add(current)
+            }
+
+            return true
+        }
+    }
+
+    val root = DFS.dfs(listOf(this), { it.overriddenDescriptors }, handler).takeIf { it.size == 1 }?.first()
+               // multiple roots is an ambiguous situation
+               ?: return null
+
+    val value = root.annotations.findAnnotation(DEFAULT_VALUE_FQ_NAME)?.firstArgumentValue()?.safeAs<String>()
+    return value?.let { StringDefaultValue(it) } ?: NullDefaultValue
 }
 
 fun FunctionDescriptor.hasOrInheritsParametersWithDefaultValue(): Boolean = DFS.ifAny(
